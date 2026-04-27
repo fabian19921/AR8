@@ -24,7 +24,7 @@ public class EmailService {
             helper.setFrom("fabianlaverman1@gmail.com");
             helper.setTo("Fabianlaverman1992@live.nl");
             helper.setReplyTo(senderEmail);
-            helper.setSubject("STM1D Contact: " + subject);
+            helper.setSubject("AR-8 Contact: " + subject);
             helper.setText(
                     "Bericht van: " + senderName + "\n" +
                             "Email: " + senderEmail + "\n\n" +
@@ -41,14 +41,14 @@ public class EmailService {
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setFrom("fabianlaverman1@gmail.com");
         mail.setTo(toEmail);
-        mail.setSubject("Welkom bij STM1D!");
+        mail.setSubject("Welkom bij AR-8!");
         mail.setText(
                 "Hallo " + name + ",\n\n" +
-                        "Je account is succesvol aangemaakt bij STM1D.\n\n" +
+                        "Je account is succesvol aangemaakt bij AR-8.\n\n" +
                         "Je kunt nu inloggen op:\n" +
                         "http://localhost:8080\n\n" +
-                        "Veel plezier met trainen!\n\n" +
-                        "Team STM1D"
+                        "Always Ready!\n\n" +
+                        "Team AR-8"
         );
         mailSender.send(mail);
     }
@@ -57,15 +57,15 @@ public class EmailService {
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setFrom("fabianlaverman1@gmail.com");
         mail.setTo(toEmail);
-        mail.setSubject("STM1D - Wachtwoord reset");
+        mail.setSubject("AR-8 - Wachtwoord reset");
         mail.setText(
                 "Hallo,\n\n" +
-                        "Je hebt een wachtwoord reset aangevraagd.\n\n" +
+                        "Je hebt een wachtwoord reset aangevraagd voor je AR-8 account.\n\n" +
                         "Klik op de onderstaande link om je wachtwoord te wijzigen:\n" +
                         resetLink + "\n\n" +
                         "Deze link is 1 uur geldig.\n\n" +
                         "Als je dit niet hebt aangevraagd, kun je deze email negeren.\n\n" +
-                        "STM1D"
+                        "Team AR-8"
         );
         mailSender.send(mail);
     }

@@ -2,14 +2,14 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Home - STM1D</title>
+    <title>Home - AR-8</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body class="secured">
 <div class="container dashboard-container">
     <div class="welcome-box">
         <h1 id="welcomeTitle">Welkom!</h1>
-        <p class="subtitle">Klaar voor je volgende training?</p>
+        <p class="subtitle">Always Ready.</p>
     </div>
 
     <div class="dashboard-grid">
@@ -64,13 +64,9 @@
 
             const user = await response.json();
 
-            // Pagina zichtbaar maken
             document.body.classList.add('auth-ready');
-
-            // Welkomsttekst
             document.getElementById('welcomeTitle').textContent = `Welkom, ${user.name}!`;
 
-            // Admin kaart tonen indien van toepassing
             if (user.role === 'ADMIN') {
                 document.getElementById('trainingPlanCard').style.display = 'block';
             }
