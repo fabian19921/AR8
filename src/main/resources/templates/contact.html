@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact - STM1D</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="secured">
+<div class="container dashboard-container">
+
+    <a href="/home" class="btn-home">← Terug naar hoofdmenu</a>
+
+    <div class="welcome-box">
+        <h1>Contact</h1>
+        <p class="subtitle">Neem contact op met jouw coach.</p>
+    </div>
+
+    <!-- Contactgegevens -->
+    <div class="profile-section">
+        <h2 class="section-title">Contactgegevens</h2>
+
+        <div class="contact-info-row">
+            <span class="contact-label">Naam</span>
+            <span class="contact-value">Fabian Laverman</span>
+        </div>
+
+        <div class="contact-info-row">
+            <span class="contact-label">Telefoon</span>
+            <a class="contact-value contact-link" href="tel:0623070370">06 23070370</a>
+        </div>
+
+        <div class="contact-info-row">
+            <span class="contact-label">Email</span>
+            <a class="contact-value contact-link" href="mailto:Fabianlaverman1992@live.nl">
+                Fabianlaverman1992@live.nl
+            </a>
+        </div>
+    </div>
+
+    <!-- Contactformulier -->
+    <div class="profile-section">
+        <h2 class="section-title">Stel je vraag</h2>
+
+        <div class="form-group">
+            <label>Jouw naam</label>
+            <input type="text" id="contactName" placeholder="Jouw naam">
+        </div>
+
+        <div class="form-group">
+            <label>Jouw emailadres</label>
+            <input type="email" id="contactEmail" placeholder="Jouw emailadres">
+        </div>
+
+        <div class="form-group">
+            <label>Onderwerp</label>
+            <input type="text" id="contactSubject" placeholder="Waar gaat je vraag over?">
+        </div>
+
+        <div class="form-group">
+            <label>Jouw vraag</label>
+            <textarea id="contactMessage" class="block-textarea" rows="5"
+                      placeholder="Stel hier gerust je vraag..."></textarea>
+        </div>
+
+        <button class="btn-save" id="sendBtn">Versturen</button>
+        <p class="message" id="contactMessage2"></p>
+    </div>
+
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+
+    async function init() {
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const response = await fetch('/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!response.ok) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return;
+            }
+
+            const user = await response.json();
+            document.body.classList.add('auth-ready');
+
+            // Naam en email alvast invullen
+            document.getElementById('contactName').value  = user.name  || '';
+            document.getElementById('contactEmail').value = user.email || '';
+
+        } catch (e) {
+            window.location.href = '/';
+        }
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', async () => {
+        const message = document.getElementById('contactMessage2');
+
+        const name    = document.getElementById('contactName').value.trim();
+        const email   = document.getElementById('contactEmail').value.trim();
+        const subject = document.getElementById('contactSubject').value.trim();
+        const msg     = document.getElementById('contactMessage').value.trim();
+
+        if (!msg) {
+            message.style.color = '#facc15';
+            message.textContent = 'Vul een bericht in.';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ name, email, subject, message: msg })
+            });
+
+            if (response.ok) {
+                message.style.color = '#22c55e';
+                message.textContent = 'Bericht verzonden! Fabian neemt zo snel mogelijk contact met je op.';
+                document.getElementById('contactSubject').value  = '';
+                document.getElementById('contactMessage').value  = '';
+            } else {
+                const error = await response.text();
+                message.style.color = '#ef4444';
+                message.textContent = 'Verzenden mislukt: ' + error;
+            }
+        } catch (e) {
+            message.style.color = '#ef4444';
+            message.textContent = 'Verbinding fout.';
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>

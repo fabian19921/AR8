@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - STM1D</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Welkom</h1>
+    <p class="subtitle">Log in om je trainingen en planning te bekijken.</p>
+
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="email">E-mailadres</label>
+            <input type="email" id="email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Wachtwoord</label>
+            <input type="password" id="password" required>
+        </div>
+
+        <button type="submit">Inloggen</button>
+    </form>
+
+    <p class="link-text">
+        Nog geen account? <a href="/register-page">Registreren</a>
+    </p>
+
+    <p class="link-text">
+        <a href="/wachtwoord-vergeten">Wachtwoord vergeten?</a>
+    </p>
+
+    <p class="message" id="message"></p>
+</div>
+
+<script>
+    const form = document.getElementById('loginForm');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const loginData = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        };
+
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(loginData)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('token', data.token);
+            window.location.href = '/home';
+        } else {
+            message.textContent = 'Inloggen mislukt. Controleer je gegevens.';
+        }
+    });
+</script>
+</body>
+</html>

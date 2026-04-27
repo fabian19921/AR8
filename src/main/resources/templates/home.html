@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Home - STM1D</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="secured">
+<div class="container dashboard-container">
+    <div class="welcome-box">
+        <h1 id="welcomeTitle">Welkom!</h1>
+        <p class="subtitle">Klaar voor je volgende training?</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <a class="dashboard-card" href="/workouts">
+            <h2>Bekijk training</h2>
+            <p>Bekijk jouw workout of planning van de dag.</p>
+        </a>
+
+        <a class="dashboard-card" href="/personal-records">
+            <h2>Personal records</h2>
+            <p>Bekijk je beste scores en prestaties.</p>
+        </a>
+
+        <a class="dashboard-card" href="/profiel">
+            <h2>Profiel</h2>
+            <p>Bekijk of wijzig jouw accountgegevens.</p>
+        </a>
+
+        <a class="dashboard-card" href="/contact">
+            <h2>Contact</h2>
+            <p>Neem contact op met jouw coach.</p>
+        </a>
+
+        <a class="dashboard-card" id="trainingPlanCard" href="/trainingplan" style="display: none;">
+            <h2>Trainingsplan maken</h2>
+            <p>Maak en beheer trainingsplannen als beheerder.</p>
+        </a>
+    </div>
+
+    <button class="logout-button" id="logoutButton">Uitloggen</button>
+</div>
+
+<script>
+    async function init() {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const response = await fetch('/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!response.ok) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return;
+            }
+
+            const user = await response.json();
+
+            // Pagina zichtbaar maken
+            document.body.classList.add('auth-ready');
+
+            // Welkomsttekst
+            document.getElementById('welcomeTitle').textContent = `Welkom, ${user.name}!`;
+
+            // Admin kaart tonen indien van toepassing
+            if (user.role === 'ADMIN') {
+                document.getElementById('trainingPlanCard').style.display = 'block';
+            }
+
+        } catch (error) {
+            window.location.href = '/';
+        }
+    }
+
+    init();
+
+    document.getElementById('logoutButton').addEventListener('click', function() {
+        localStorage.removeItem('token');
+        window.location.href = '/';
+    });
+</script>
+</body>
+</html>

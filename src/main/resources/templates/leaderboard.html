@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Leaderboard - STM1D</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="secured">
+<div class="container dashboard-container">
+
+    <a id="backBtn" href="/workouts" class="btn-home">← Terug naar workout</a>
+
+    <div class="welcome-box">
+        <h1 id="leaderboardTitle">Leaderboard</h1>
+        <p class="subtitle" id="leaderboardSubtitle"></p>
+    </div>
+
+    <div id="leaderboardContent">
+        <p style="color:#94a3b8">Laden...</p>
+    </div>
+
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+
+    const params    = new URLSearchParams(window.location.search);
+    const date      = params.get('date');
+    const blockKey  = params.get('blockKey');
+    const scoreType = params.get('scoreType');
+
+    if (date) {
+    document.getElementById('backBtn').href = `/workouts?date=${date}`;
+}
+
+    // ─── Auth + laden ─────────────────────────────────
+    async function init() {
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const authRes = await fetch('/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!authRes.ok) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return;
+            }
+
+            document.body.classList.add('auth-ready');
+            await loadLeaderboard();
+
+        } catch (e) {
+            window.location.href = '/';
+        }
+    }
+
+    async function loadLeaderboard() {
+        const content = document.getElementById('leaderboardContent');
+
+        try {
+            const response = await fetch(`/api/scores/${date}/${blockKey}/leaderboard`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!response.ok) {
+                content.innerHTML = '<p style="color:#ef4444">Fout bij laden.</p>';
+                return;
+            }
+
+            const scores = await response.json();
+
+            const blockLabel = blockKey.replace(/^block_\d+_/, '').replace(/_/g, ' ');
+            document.getElementById('leaderboardTitle').textContent = `🏆 ${blockLabel}`;
+            document.getElementById('leaderboardSubtitle').textContent = formatDate(date);
+
+            if (scores.length === 0) {
+                content.innerHTML = `
+                    <div class="no-workout">
+                        <p>Nog geen scores ingevoerd voor dit blok.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sorted = sortScores(scores, scoreType);
+
+            content.innerHTML = '';
+            sorted.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.classList.add('leaderboard-row');
+                if (index === 0) div.classList.add('leaderboard-first');
+                if (index === 1) div.classList.add('leaderboard-second');
+                if (index === 2) div.classList.add('leaderboard-third');
+
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                const unit  = scoreType === 'kg' ? ' kg' : scoreType === 'tijd' ? '' : scoreType === 'rondes' ? ' rondes' : ' reps';
+                const score = scoreType === 'tijd' ? formatTime(entry.scoreValue) : entry.scoreValue + unit;
+
+                div.innerHTML = `
+                    <div class="leaderboard-rank">${medal}</div>
+                    <div class="leaderboard-name">${entry.name}</div>
+                    <div class="leaderboard-score">${score}</div>
+                `;
+
+                content.appendChild(div);
+            });
+
+        } catch (e) {
+            content.innerHTML = '<p style="color:#ef4444">Verbinding fout.</p>';
+            console.error(e);
+        }
+    }
+
+    function sortScores(scores, scoreType) {
+        return [...scores].sort((a, b) => {
+            if (scoreType === 'tijd') {
+                return timeToSeconds(a.scoreValue) - timeToSeconds(b.scoreValue);
+            } else {
+                return parseFloat(b.scoreValue) - parseFloat(a.scoreValue);
+            }
+        });
+    }
+
+    function timeToSeconds(timeStr) {
+        const parts = timeStr.split(':');
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+
+    function formatTime(timeStr) {
+        const parts = timeStr.split(':');
+        return `${parts[0]}:${parts[1].padStart(2, '0')}`;
+    }
+
+    function formatDate(dateStr) {
+        const d = new Date(dateStr + 'T00:00:00');
+        const dagen   = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+        const maanden = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+        return `${dagen[d.getDay()]} ${d.getDate()} ${maanden[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    init();
+</script>
+</body>
+</html>

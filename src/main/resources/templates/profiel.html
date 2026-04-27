@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Profiel - STM1D</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="secured">
+<div class="container dashboard-container">
+
+    <a href="/home" class="btn-home">← Terug naar hoofdmenu</a>
+
+    <div class="welcome-box">
+        <h1 id="profileName">Profiel</h1>
+        <p class="subtitle" id="profileEmail"></p>
+    </div>
+
+    <!-- Profiel info -->
+    <div class="profile-section">
+        <h2 class="section-title">Persoonlijke gegevens</h2>
+
+        <div class="form-group">
+            <label>Naam</label>
+            <input type="text" id="name" placeholder="Jouw naam">
+        </div>
+
+        <div class="form-group">
+            <label>Geboortedatum</label>
+            <input type="date" id="birthDate">
+        </div>
+
+        <div class="form-group">
+            <label>Locatie / Box</label>
+            <input type="text" id="location" placeholder="Bijv. CrossFit Amsterdam">
+        </div>
+
+        <div class="form-group">
+            <label>Quote over jezelf</label>
+            <textarea id="quote" class="block-textarea" rows="3"
+                      placeholder="Bijv. No pain, no gain..."></textarea>
+        </div>
+
+        <button class="btn-save" id="saveProfileBtn">Profiel opslaan</button>
+        <p class="message" id="profileMessage"></p>
+    </div>
+
+    <!-- Wachtwoord wijzigen -->
+    <div class="profile-section">
+        <h2 class="section-title">Wachtwoord wijzigen</h2>
+
+        <div class="form-group">
+            <label>Huidig wachtwoord</label>
+            <input type="password" id="currentPassword" placeholder="Huidig wachtwoord">
+        </div>
+
+        <div class="form-group">
+            <label>Nieuw wachtwoord</label>
+            <input type="password" id="newPassword" placeholder="Nieuw wachtwoord">
+        </div>
+
+        <div class="form-group">
+            <label>Bevestig nieuw wachtwoord</label>
+            <input type="password" id="confirmPassword" placeholder="Herhaal nieuw wachtwoord">
+        </div>
+
+        <button class="btn-save" id="savePasswordBtn">Wachtwoord wijzigen</button>
+        <p class="message" id="passwordMessage"></p>
+    </div>
+
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+
+    // ─── Auth ─────────────────────────────────────────
+    async function init() {
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/profile', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!response.ok) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return;
+            }
+
+            const user = await response.json();
+
+            document.body.classList.add('auth-ready');
+
+            // Velden invullen
+            document.getElementById('profileName').textContent  = user.name;
+            document.getElementById('profileEmail').textContent = user.email;
+            document.getElementById('name').value               = user.name;
+            document.getElementById('birthDate').value          = user.birthDate  || '';
+            document.getElementById('location').value           = user.location   || '';
+            document.getElementById('quote').value              = user.quote      || '';
+
+        } catch (error) {
+            window.location.href = '/';
+        }
+    }
+
+    // ─── Profiel opslaan ─────────────────────────────
+    document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+        const message = document.getElementById('profileMessage');
+
+        try {
+            const response = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    name:      document.getElementById('name').value,
+                    birthDate: document.getElementById('birthDate').value,
+                    location:  document.getElementById('location').value,
+                    quote:     document.getElementById('quote').value
+                })
+            });
+
+            if (response.ok) {
+                message.style.color = '#22c55e';
+                message.textContent = 'Profiel opgeslagen!';
+            } else {
+                const error = await response.text();
+                message.style.color = '#ef4444';
+                message.textContent = error;
+            }
+        } catch (e) {
+            message.style.color = '#ef4444';
+            message.textContent = 'Verbinding fout.';
+        }
+    });
+
+    // ─── Wachtwoord wijzigen ──────────────────────────
+    document.getElementById('savePasswordBtn').addEventListener('click', async () => {
+        const message = document.getElementById('passwordMessage');
+
+        try {
+            const response = await fetch('/api/profile/password', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    current: document.getElementById('currentPassword').value,
+                    new:     document.getElementById('newPassword').value,
+                    confirm: document.getElementById('confirmPassword').value
+                })
+            });
+
+            if (response.ok) {
+                message.style.color = '#22c55e';
+                message.textContent = 'Wachtwoord gewijzigd!';
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value     = '';
+                document.getElementById('confirmPassword').value = '';
+            } else {
+                const error = await response.text();
+                message.style.color = '#ef4444';
+                message.textContent = error;
+            }
+        } catch (e) {
+            message.style.color = '#ef4444';
+            message.textContent = 'Verbinding fout.';
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>

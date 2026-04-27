@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Wachtwoord vergeten - STM1D</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Wachtwoord vergeten</h1>
+    <p class="subtitle">Vul je emailadres in en je ontvangt een reset link.</p>
+
+    <form id="forgotForm">
+        <div class="form-group">
+            <label for="email">E-mailadres</label>
+            <input type="email" id="email" required placeholder="Jouw emailadres">
+        </div>
+
+        <button type="submit">Reset link versturen</button>
+    </form>
+
+    <p class="link-text">
+        <a href="/">Terug naar inloggen</a>
+    </p>
+
+    <p class="message" id="message"></p>
+</div>
+
+<script>
+    document.getElementById('forgotForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const message = document.getElementById('message');
+        const email   = document.getElementById('email').value;
+
+        try {
+            const response = await fetch('/api/password/forgot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const text = await response.text();
+            message.style.color = '#22c55e';
+            message.textContent = text;
+
+        } catch (e) {
+            message.style.color = '#ef4444';
+            message.textContent = 'Verbinding fout.';
+        }
+    });
+</script>
+</body>
+</html>

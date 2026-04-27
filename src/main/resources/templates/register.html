@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Registreren - STM1D</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Account aanmaken</h1>
+    <p class="subtitle">Maak je account aan en start met trainen.</p>
+
+    <form id="registerForm">
+        <div class="form-group">
+            <label for="name">Naam</label>
+            <input type="text" id="name" required placeholder="Jouw naam">
+        </div>
+
+        <div class="form-group">
+            <label for="email">E-mailadres</label>
+            <input type="email" id="email" required placeholder="Jouw emailadres">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Wachtwoord</label>
+            <input type="password" id="password" required placeholder="Minimaal 6 tekens">
+        </div>
+
+        <div class="form-group">
+            <label for="confirmPassword">Bevestig wachtwoord</label>
+            <input type="password" id="confirmPassword" required placeholder="Herhaal wachtwoord">
+        </div>
+
+        <button type="submit">Registreren</button>
+    </form>
+
+    <p class="link-text">
+        Heb je al een account? <a href="/">Inloggen</a>
+    </p>
+
+    <p class="message" id="message"></p>
+</div>
+
+<script>
+    const form = document.getElementById('registerForm');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const name     = document.getElementById('name').value.trim();
+        const email    = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirm  = document.getElementById('confirmPassword').value;
+
+        // Wachtwoord check frontend
+        if (password !== confirm) {
+            message.style.color = '#ef4444';
+            message.textContent = 'Wachtwoorden komen niet overeen.';
+            return;
+        }
+
+        if (password.length < 6) {
+            message.style.color = '#ef4444';
+            message.textContent = 'Wachtwoord moet minimaal 6 tekens zijn.';
+            return;
+        }
+
+        const registerData = { name, email, password };
+
+        const response = await fetch('/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(registerData)
+        });
+
+        if (response.ok) {
+            message.style.color = '#22c55e';
+            message.textContent = 'Registratie gelukt! Controleer je email. Je wordt doorgestuurd...';
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        } else {
+            const errorText = await response.text();
+            message.style.color = '#ef4444';
+            message.textContent = 'Registratie mislukt: ' + errorText;
+        }
+    });
+</script>
+</body>
+</html>

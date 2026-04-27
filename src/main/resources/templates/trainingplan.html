@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Trainingsplan maken - STM1D</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="trainingplan-page secured">
+<div class="trainingplan-layout">
+
+    <!-- LINKS: formulier -->
+    <div class="container dashboard-container trainingplan-form">
+        <div class="welcome-box">
+            <a href="/home" class="btn-home">
+                ← Terug naar hoofdmenu
+            </a>
+            <h1>Trainingsplan maken</h1>
+            <p class="subtitle">Stel een workout samen voor een specifieke dag.</p>
+        </div>
+
+        <div class="form-group">
+            <label for="workoutDate">Datum</label>
+            <input type="date" id="workoutDate">
+        </div>
+
+        <div class="workout-block fixed-block">
+            <h2>Warming Up</h2>
+            <textarea id="block-warmup" class="block-textarea" placeholder="Beschrijf de warming up..."
+                      rows="4"></textarea>
+        </div>
+
+        <div id="dynamicBlocks"></div>
+
+        <button class="btn-add-block" id="addBlockBtn">+ Blok toevoegen</button>
+
+        <div class="workout-block fixed-block">
+            <h2>Cooling Down </h2>
+            <textarea id="block-cooling" class="block-textarea"
+                      placeholder="Beschrijf de cooling down of accessoire werk..." rows="4"></textarea>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-save" id="saveButton">Opslaan</button>
+            <button class="btn-delete-plan" id="deleteButton">Verwijderen</button>
+        </div>
+        <p class="message" id="message"></p>
+
+    </div>
+
+    <!-- RECHTS: kalender -->
+    <div class="calendar-widget">
+        <div class="calendar-header">
+            <button class="cal-nav" id="prevMonth">‹</button>
+            <span id="calendarTitle"></span>
+            <button class="cal-nav" id="nextMonth">›</button>
+        </div>
+        <div class="calendar-grid">
+            <div class="cal-day-label">Ma</div>
+            <div class="cal-day-label">Di</div>
+            <div class="cal-day-label">Wo</div>
+            <div class="cal-day-label">Do</div>
+            <div class="cal-day-label">Vr</div>
+            <div class="cal-day-label">Za</div>
+            <div class="cal-day-label">Zo</div>
+        </div>
+        <div class="calendar-days" id="calendarDays"></div>
+    </div>
+
+</div>
+
+<script>
+    // ─── State ───────────────────────────────────────
+    let blocks = [];
+    let filledDates = [];
+    let currentYear  = new Date().getFullYear();
+    let currentMonth = new Date().getMonth(); // 0-based
+
+    // ─── Blokken ─────────────────────────────────────
+    function renderBlocks() {
+    const container = document.getElementById('dynamicBlocks');
+    container.innerHTML = '';
+
+    blocks.forEach((block, index) => {
+        const div = document.createElement('div');
+        div.classList.add('workout-block', 'dynamic-block');
+
+        const prOefeningen = [
+            { key: 'backsquat',             label: 'Back Squat' },
+            { key: 'frontsquat',            label: 'Front Squat' },
+            { key: 'overheadsquat',         label: 'Overhead Squat' },
+            { key: 'deadlift',              label: 'Deadlift' },
+            { key: 'powersnatch',           label: 'Power Snatch' },
+            { key: 'squatsnatch',           label: 'Squat Snatch' },
+            { key: 'powerclean',            label: 'Power Clean' },
+            { key: 'squatclean',            label: 'Squat Clean' },
+            { key: 'cleanandjerk',          label: 'Clean & Jerk' },
+            { key: 'pushjerk',              label: 'Push Jerk' },
+            { key: 'splitjerk',             label: 'Split Jerk' },
+            { key: 'thruster',              label: 'Thruster' },
+            { key: 'pullups',               label: 'Pull Ups' },
+            { key: 'toestobar',             label: 'Toes to Bar' },
+            { key: 'barmuscleups',          label: 'Bar Muscle Ups' },
+            { key: 'ringmuscleups',         label: 'Ring Muscle Ups' },
+            { key: 'handstandpushups',      label: 'Handstand Push Ups' },
+            { key: 'stricthandstandpushups',label: 'Strict Handstand Push Ups' },
+            { key: 'handstandwalk',         label: 'Handstand Walk' }
+        ];
+
+        const isVrijeTitel = !block.prExercise || block.prExercise === 'vrij';
+
+        const dropdownOptions = prOefeningen.map(o => `
+            <option value="${o.key}" ${block.prExercise === o.key ? 'selected' : ''}>
+                ${o.label}
+            </option>
+        `).join('');
+
+        div.innerHTML = `
+            <div class="block-header">
+                <div class="title-select-group">
+                    <select class="block-title-select" onchange="updatePrExercise(${index}, this.value)">
+                        <option value="vrij" ${isVrijeTitel ? 'selected' : ''}>— Vrije titel —</option>
+                        ${dropdownOptions}
+                    </select>
+                    <input
+                        type="text"
+                        class="block-title-input"
+                        placeholder="Titel..."
+                        value="${block.title}"
+                        oninput="updateTitle(${index}, this.value)"
+                        style="display: ${isVrijeTitel ? 'block' : 'none'}"
+                    >
+                </div>
+                <div class="block-controls">
+                    <button class="btn-control" onclick="moveBlock(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+                    <button class="btn-control" onclick="moveBlock(${index}, 1)" ${index === blocks.length - 1 ? 'disabled' : ''}>↓</button>
+                    <button class="btn-control btn-delete" onclick="removeBlock(${index})">✕</button>
+                </div>
+            </div>
+            <div class="score-type-row">
+                <label>Scoretype</label>
+                <select class="score-select" onchange="updateScoreType(${index}, this.value)">
+                    <option value="geen"   ${block.scoreType === 'geen'   ? 'selected' : ''}>Geen</option>
+                    <option value="tijd"   ${block.scoreType === 'tijd'   ? 'selected' : ''}>Tijd</option>
+                    <option value="kg"     ${block.scoreType === 'kg'     ? 'selected' : ''}>Kg</option>
+                    <option value="rondes" ${block.scoreType === 'rondes' ? 'selected' : ''}>Rondes</option>
+                    <option value="reps"   ${block.scoreType === 'reps'   ? 'selected' : ''}>Reps</option>
+                </select>
+            </div>
+            <textarea
+                class="block-textarea"
+                placeholder="Beschrijf de oefeningen..."
+                rows="5"
+                oninput="updateContent(${index}, this.value)"
+            >${block.content}</textarea>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
+
+    function addBlock() {
+    blocks.push({ title: '', content: '', scoreType: 'geen', prExercise: 'vrij' });
+    renderBlocks();
+    document.getElementById('dynamicBlocks').lastElementChild
+        .scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+    function updateScoreType(index, value) {
+    blocks[index].scoreType = value;
+    }
+
+    function removeBlock(index) {
+        blocks.splice(index, 1);
+        renderBlocks();
+    }
+
+    function moveBlock(index, direction) {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= blocks.length) return;
+        [blocks[index], blocks[newIndex]] = [blocks[newIndex], blocks[index]];
+        renderBlocks();
+    }
+
+    function updateTitle(index, value)   { blocks[index].title   = value; }
+    function updateContent(index, value) { blocks[index].content = value; }
+
+    function updatePrExercise(index, value) {
+    blocks[index].prExercise = value;
+
+    // Als een PR oefening gekozen wordt, titel automatisch invullen
+    const prOefeningen = {
+        backsquat: 'Back Squat', frontsquat: 'Front Squat',
+        overheadsquat: 'Overhead Squat', deadlift: 'Deadlift',
+        powersnatch: 'Power Snatch', squatsnatch: 'Squat Snatch',
+        powerclean: 'Power Clean', squatclean: 'Squat Clean',
+        cleanandjerk: 'Clean & Jerk', pushjerk: 'Push Jerk',
+        splitjerk: 'Split Jerk', thruster: 'Thruster',
+        pullups: 'Pull Ups', toestobar: 'Toes to Bar',
+        barmuscleups: 'Bar Muscle Ups', ringmuscleups: 'Ring Muscle Ups',
+        handstandpushups: 'Handstand Push Ups',
+        stricthandstandpushups: 'Strict Handstand Push Ups',
+        handstandwalk: 'Handstand Walk'
+    };
+
+    if (value !== 'vrij') {
+        blocks[index].title = prOefeningen[value] || value;
+    }
+
+    renderBlocks();
+}
+
+
+
+    // ─── Plan laden bij datumkeuze ────────────────────
+
+    async function loadPlan(date) {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`/api/trainingsplan/${date}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (response.ok) {
+            const plan = await response.json();
+            document.getElementById('block-warmup').value  = plan.warmup  || '';
+            document.getElementById('block-cooling').value = plan.cooling || '';
+            blocks = (plan.blocks || []).map(b => ({
+    title:      b.title     || '',
+    content:    b.content   || '',
+    scoreType:  b.scoreType || 'geen',
+    prExercise: b.prExercise || 'vrij'
+}));
+            renderBlocks();
+        } else {
+            // Geen plan voor deze datum → alles leegmaken
+            document.getElementById('block-warmup').value  = '';
+            document.getElementById('block-cooling').value = '';
+            blocks = [];
+            renderBlocks();
+        }
+    } catch (error) {
+        console.error('Laden mislukt:', error);
+    }
+}
+
+    document.getElementById('workoutDate').addEventListener('change', function() {
+        if (this.value) loadPlan(this.value);
+    });
+
+    // ─── Opslaan ─────────────────────────────────────
+
+    async function save() {
+        const date    = document.getElementById('workoutDate').value;
+        const message = document.getElementById('message');
+
+        if (!date) {
+            message.style.color = '#facc15';
+            message.textContent = 'Kies eerst een datum.';
+            return;
+        }
+
+        const plan = {
+            date,
+            warmup:  document.getElementById('block-warmup').value.trim(),
+            cooling: document.getElementById('block-cooling').value.trim(),
+            blocks: blocks.map(b => ({
+    title:      b.title.trim(),
+    content:    b.content.trim(),
+    scoreType:  b.scoreType  || 'geen',
+    prExercise: b.prExercise || 'vrij'
+}))
+        };
+
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch('/api/trainingsplan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(plan)
+            });
+
+            if (response.ok) {
+                message.style.color = '#22c55e';
+                message.textContent = 'Trainingsplan opgeslagen!';
+
+                // Kalender vernieuwen zodat groene bolletje verschijnt
+                await loadFilledDates();
+                renderCalendar();
+            } else {
+                message.style.color = '#ef4444';
+                message.textContent = 'Opslaan mislukt.';
+            }
+        } catch (error) {
+            message.style.color = '#ef4444';
+            message.textContent = 'Verbinding fout.';
+        }
+    }
+
+    document.getElementById('saveButton').addEventListener('click', save);
+    document.getElementById('addBlockBtn').addEventListener('click', addBlock);
+
+     // ─── Verwijderen ─────────────────────────────────────
+
+     async function deletePlan() {
+    const date    = document.getElementById('workoutDate').value;
+    const message = document.getElementById('message');
+
+    if (!date) {
+        message.style.color = '#facc15';
+        message.textContent = 'Kies eerst een datum.';
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+
+    try {
+        const response = await fetch(`/api/trainingsplan/${date}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (response.ok) {
+            message.style.color = '#22c55e';
+            message.textContent = 'Plan verwijderd.';
+
+            // Interface leegmaken
+            document.getElementById('block-warmup').value  = '';
+            document.getElementById('block-cooling').value = '';
+            blocks = [];
+            renderBlocks();
+
+            // Kalender vernieuwen zodat bolletje verdwijnt
+            await loadFilledDates();
+            renderCalendar();
+        } else if (response.status === 404) {
+            message.style.color = '#facc15';
+            message.textContent = 'Geen plan gevonden voor deze datum.';
+        } else {
+            message.style.color = '#ef4444';
+            message.textContent = 'Verwijderen mislukt.';
+        }
+    } catch (error) {
+        message.style.color = '#ef4444';
+        message.textContent = 'Verbinding fout.';
+        console.error(error);
+    }
+}
+
+document.getElementById('deleteButton').addEventListener('click', deletePlan);
+
+    // ─── Kalender ─────────────────────────────────────
+    const maanden = [
+        'Januari','Februari','Maart','April','Mei','Juni',
+        'Juli','Augustus','September','Oktober','November','December'
+    ];
+
+    async function loadFilledDates() {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/trainingsplan/datums', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (response.ok) {
+                filledDates = await response.json();
+            }
+        } catch (e) {
+            console.error('Datums laden mislukt:', e);
+        }
+    }
+
+    function renderCalendar() {
+        document.getElementById('calendarTitle').textContent =
+            `${maanden[currentMonth]} ${currentYear}`;
+
+        const container = document.getElementById('calendarDays');
+        container.innerHTML = '';
+
+        // Eerste dag van de maand (0=zo, 1=ma ... omzetten naar ma=0)
+        const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+        const startOffset = (firstDay === 0) ? 6 : firstDay - 1;
+
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+        // Lege cellen voor offset
+        for (let i = 0; i < startOffset; i++) {
+            const empty = document.createElement('div');
+            container.appendChild(empty);
+        }
+
+        // Dagen
+        for (let day = 1; day <= daysInMonth; day++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cal-day');
+
+            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const isFilled = filledDates.includes(dateStr);
+            const isToday  = dateStr === new Date().toISOString().split('T')[0];
+            const isSelected = dateStr === document.getElementById('workoutDate').value;
+
+            if (isFilled)   cell.classList.add('cal-filled');
+            if (isToday)    cell.classList.add('cal-today');
+            if (isSelected) cell.classList.add('cal-selected');
+
+            cell.innerHTML = `
+                <span class="cal-day-number">${day}</span>
+                ${isFilled ? '<span class="cal-dot"></span>' : ''}
+            `;
+
+            cell.addEventListener('click', () => {
+                document.getElementById('workoutDate').value = dateStr;
+                loadPlan(dateStr);
+                renderCalendar();
+            });
+
+            container.appendChild(cell);
+        }
+    }
+
+    document.getElementById('prevMonth').addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        renderCalendar();
+    });
+
+    document.getElementById('nextMonth').addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        renderCalendar();
+    });
+
+    // ─── Init ─────────────────────────────────────────
+    async function init() {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+        window.location.href = '/';
+        return;
+    }
+
+    try {
+        const response = await fetch('/auth/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!response.ok) {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+            return;
+        }
+
+        const user = await response.json();
+
+        // Rolcheck — alleen ADMIN mag hier komen
+        if (user.role !== 'ADMIN') {
+            window.location.href = '/home';
+            return;
+        }
+
+        document.body.classList.add('auth-ready');
+        await loadFilledDates();
+        renderCalendar();
+
+    } catch (error) {
+        window.location.href = '/';
+    }
+}
+
+    init();
+</script>
+</body>
+</html>

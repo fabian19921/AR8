@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Personal Records - STM1D</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="secured">
+<div class="container dashboard-container">
+
+    <a href="/home" class="btn-home">← Terug naar hoofdmenu</a>
+
+    <div class="welcome-box">
+        <h1>Personal Records</h1>
+        <p class="subtitle">Jouw beste prestaties op een rij.</p>
+    </div>
+
+    <div id="prSections"></div>
+
+    <button class="btn-save" id="saveAllBtn">Alles opslaan</button>
+    <p class="message" id="prMessage"></p>
+
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+
+    const categories = [
+        {
+            title: 'Squats',
+            exercises: [
+                { key: 'backsquat',      label: 'Back Squat',      unit: 'kg' },
+                { key: 'frontsquat',     label: 'Front Squat',     unit: 'kg' },
+                { key: 'overheadsquat',  label: 'Overhead Squat',  unit: 'kg' }
+            ]
+        },
+        {
+            title: 'Lifts',
+            exercises: [
+                { key: 'deadlift',      label: 'Deadlift',       unit: 'kg' },
+                { key: 'powersnatch',   label: 'Power Snatch',   unit: 'kg' },
+                { key: 'squatsnatch',   label: 'Squat Snatch',   unit: 'kg' },
+                { key: 'powerclean',    label: 'Power Clean',    unit: 'kg' },
+                { key: 'squatclean',    label: 'Squat Clean',    unit: 'kg' },
+                { key: 'cleanandjerk',  label: 'Clean & Jerk',   unit: 'kg' },
+                { key: 'pushjerk',      label: 'Push Jerk',      unit: 'kg' },
+                { key: 'splitjerk',     label: 'Split Jerk',     unit: 'kg' },
+                { key: 'thruster',      label: 'Thruster',       unit: 'kg' }
+            ]
+        },
+        {
+            title: 'Gymnastics',
+            exercises: [
+                { key: 'pullups',               label: 'Pull Ups',                unit: 'reps' },
+                { key: 'toestobar',             label: 'Toes to Bar',             unit: 'reps' },
+                { key: 'barmuscleups',          label: 'Bar Muscle Ups',          unit: 'reps' },
+                { key: 'ringmuscleups',         label: 'Ring Muscle Ups',         unit: 'reps' },
+                { key: 'handstandpushups',      label: 'Handstand Push Ups',      unit: 'reps' },
+                { key: 'stricthandstandpushups',label: 'Strict Handstand Push Ups', unit: 'reps' },
+                { key: 'handstandwalk',         label: 'Handstand Walk',          unit: 'meter' }
+            ]
+        }
+    ];
+
+    // ─── Render secties ───────────────────────────────
+    function renderSections(currentPRs) {
+        const container = document.getElementById('prSections');
+        container.innerHTML = '';
+
+        categories.forEach(cat => {
+            const section = document.createElement('div');
+            section.classList.add('profile-section');
+
+            section.innerHTML = `<h2 class="section-title">${cat.title}</h2>`;
+
+            cat.exercises.forEach(ex => {
+                const currentValue = currentPRs[ex.key] || '';
+                const row = document.createElement('div');
+                row.classList.add('pr-input-row');
+                row.innerHTML = `
+                    <label class="pr-input-label">${ex.label}</label>
+                    <div class="pr-input-group">
+                        <input
+                            type="number"
+                            class="pr-input"
+                            id="pr-${ex.key}"
+                            placeholder="—"
+                            value="${currentValue}"
+                            min="0"
+                        >
+                        <span class="pr-unit">${ex.unit}</span>
+                    </div>
+                `;
+                section.appendChild(row);
+            });
+
+            container.appendChild(section);
+        });
+    }
+
+    // ─── PR's laden ───────────────────────────────────
+    async function loadPRs() {
+        try {
+            const response = await fetch('/api/pr', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            const prs = response.ok ? await response.json() : {};
+            renderSections(prs);
+
+        } catch (e) {
+            renderSections({});
+        }
+    }
+
+    // ─── Alles opslaan ───────────────────────────────
+    document.getElementById('saveAllBtn').addEventListener('click', async () => {
+        const message = document.getElementById('prMessage');
+        let newPRs = [];
+
+        const allExercises = categories.flatMap(cat => cat.exercises);
+
+        for (const ex of allExercises) {
+            const input = document.getElementById(`pr-${ex.key}`);
+            const value = input.value.trim();
+
+            if (!value) continue;
+
+            try {
+                const response = await fetch('/api/pr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        exercise: ex.key,
+                        weight: parseFloat(value)
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.isNewPR) {
+                        newPRs.push(ex.label);
+                    }
+                }
+            } catch (e) {
+                console.error('Fout bij opslaan:', ex.key, e);
+            }
+        }
+
+        if (newPRs.length > 0) {
+            message.style.color = '#22c55e';
+            message.textContent = `🎉 Nieuwe PR's: ${newPRs.join(', ')}!`;
+        } else {
+            message.style.color = '#22c55e';
+            message.textContent = 'Opgeslagen!';
+        }
+
+        await loadPRs();
+    });
+
+    // ─── Init ─────────────────────────────────────────
+    async function init() {
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const response = await fetch('/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (!response.ok) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return;
+            }
+
+            document.body.classList.add('auth-ready');
+            await loadPRs();
+
+        } catch (e) {
+            window.location.href = '/';
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
