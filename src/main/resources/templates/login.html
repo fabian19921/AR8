@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Login - AR8</title>
+    <title>Login - AR-8</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -42,6 +42,11 @@
     form.addEventListener('submit', async function(event) {
         event.preventDefault();
 
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Bezig met inloggen...';
+
         const loginData = {
             email: document.getElementById('email').value,
             password: document.getElementById('password').value
@@ -56,11 +61,15 @@
         });
 
         if (response.ok) {
+            submitBtn.textContent = 'Ingelogd!';
             const data = await response.json();
             localStorage.setItem('token', data.token);
             window.location.href = '/home';
         } else {
+            message.style.color = '#ef4444';
             message.textContent = 'Inloggen mislukt. Controleer je gegevens.';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Inloggen';
         }
     });
 </script>
