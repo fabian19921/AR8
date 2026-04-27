@@ -48,6 +48,7 @@
     form.addEventListener('submit', async function(event) {
         event.preventDefault();
 
+        const submitBtn = form.querySelector('button[type="submit"]');
         const name     = document.getElementById('name').value.trim();
         const email    = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
@@ -65,6 +66,10 @@
             return;
         }
 
+        // Knop uitschakelen en tekst aanpassen
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Bezig met registreren...';
+
         const registerData = { name, email, password };
 
         const response = await fetch('/auth/register', {
@@ -74,6 +79,7 @@
         });
 
         if (response.ok) {
+            submitBtn.style.display = 'none';
             message.style.color = '#22c55e';
             message.textContent = 'Registratie gelukt! Controleer je email. Je wordt doorgestuurd...';
             setTimeout(() => {
@@ -83,6 +89,8 @@
             const errorText = await response.text();
             message.style.color = '#ef4444';
             message.textContent = 'Registratie mislukt: ' + errorText;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Registreren';
         }
     });
 </script>
