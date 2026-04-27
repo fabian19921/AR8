@@ -39,14 +39,14 @@ public class RegisterController {
 
         User savedUser = userRepository.save(user);
 
-        try {
-            System.out.println("Welkomstmail versturen naar: " + savedUser.getEmail());
-            emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getName());
-            System.out.println("Welkomstmail verstuurd!");
-        } catch (Exception e) {
-            System.err.println("Welkomstmail versturen mislukt: " + e.getMessage());
-            e.printStackTrace();
-        }
+        // Email asynchroon op achtergrond versturen
+        new Thread(() -> {
+            try {
+                emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getName());
+            } catch (Exception e) {
+                System.err.println("Welkomstmail mislukt: " + e.getMessage());
+            }
+        }).start();
 
         savedUser.setPassword(null);
         return ResponseEntity.ok(savedUser);
