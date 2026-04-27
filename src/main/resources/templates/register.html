@@ -2,12 +2,12 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Registreren - STM1D</title>
+    <title>Registreren - AR-8</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="container">
-    <h1>Account aanmaken</h1>
+    <h1>AR-8</h1>
     <p class="subtitle">Maak je account aan en start met trainen.</p>
 
     <form id="registerForm">
@@ -53,7 +53,6 @@
         const password = document.getElementById('password').value;
         const confirm  = document.getElementById('confirmPassword').value;
 
-        // Wachtwoord check frontend
         if (password !== confirm) {
             message.style.color = '#ef4444';
             message.textContent = 'Wachtwoorden komen niet overeen.';
