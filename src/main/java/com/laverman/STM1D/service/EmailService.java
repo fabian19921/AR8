@@ -46,7 +46,7 @@ public class EmailService {
                 "Hallo " + name + ",\n\n" +
                         "Je account is succesvol aangemaakt bij AR-8.\n\n" +
                         "Je kunt nu inloggen op:\n" +
-                        "http://localhost:8080\n\n" +
+                        "https://ar-8.onrender.com/\n\n" +
                         "Always Ready!\n\n" +
                         "Team AR-8"
         );
