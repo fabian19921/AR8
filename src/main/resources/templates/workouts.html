@@ -246,47 +246,70 @@
         let scoreHtml = '';
 
         if (scoreType && scoreType !== 'geen') {
-            if (scoreType === 'tijd') {
-                const parts = existingScore.split(':');
-                const min   = parts[0] || '';
-                const sec   = parts[1] || '';
-                scoreHtml = `
-                    <div class="score-input-row">
-                        <span class="score-label">Jouw tijd:</span>
-                        <div class="time-inputs">
-                            <input type="number" class="score-time-input" id="min-${blockKey}"
-                                   placeholder="00" min="0" max="99" value="${min}">
-                            <span class="time-sep">:</span>
-                            <input type="number" class="score-time-input" id="sec-${blockKey}"
-                                   placeholder="00" min="0" max="59" value="${sec}">
-                            <span class="score-unit">min : sec</span>
-                        </div>
-                        <button class="btn-score-save" onclick="saveScore('${dateStr}', '${blockKey}', 'tijd', '${blockKey}')">
-                            ${existingScore ? 'Aanpassen' : 'Opslaan'}
-                        </button>
-                        <a class="btn-leaderboard" href="/leaderboard?date=${dateStr}&blockKey=${blockKey}&scoreType=tijd">
-                            🏆 Leaderboard
-                        </a>
-                    </div>
-                `;
-            } else {
-                const unit = scoreType === 'kg' ? 'kg' : scoreType === 'rondes' ? 'rondes' : 'reps';
-                scoreHtml = `
-                    <div class="score-input-row">
-                        <span class="score-label">Jouw score:</span>
-                        <input type="number" class="score-number-input" id="val-${blockKey}"
-                               placeholder="0" value="${existingScore}">
-                        <span class="score-unit">${unit}</span>
-                        <button class="btn-score-save" onclick="saveScore('${dateStr}', '${blockKey}', '${scoreType}', '${blockKey}', '${prExercise || ''}')">
-                            ${existingScore ? 'Aanpassen' : 'Opslaan'}
-                        </button>
-                        <a class="btn-leaderboard" href="/leaderboard?date=${dateStr}&blockKey=${blockKey}&scoreType=${scoreType}">
-                            🏆 Leaderboard
-                        </a>
-                    </div>
-                `;
-            }
-        }
+    if (scoreType === 'tijd') {
+        const parts = existingScore.split(':');
+        const min   = parts[0] || '';
+        const sec   = parts[1] || '';
+        scoreHtml = `
+            <div class="score-input-row">
+                <span class="score-label">Jouw tijd:</span>
+                <div class="time-inputs">
+                    <input type="number" class="score-time-input" id="min-${blockKey}"
+                           placeholder="00" min="0" max="99" value="${min}">
+                    <span class="time-sep">:</span>
+                    <input type="number" class="score-time-input" id="sec-${blockKey}"
+                           placeholder="00" min="0" max="59" value="${sec}">
+                    <span class="score-unit">min : sec</span>
+                </div>
+                <button class="btn-score-save" onclick="saveScore('${dateStr}', '${blockKey}', 'tijd', '${blockKey}')">
+                    ${existingScore ? 'Aanpassen' : 'Opslaan'}
+                </button>
+                <a class="btn-leaderboard" href="/leaderboard?date=${dateStr}&blockKey=${blockKey}&scoreType=tijd">
+                    🏆 Leaderboard
+                </a>
+            </div>
+        `;
+    } else if (scoreType === 'rondes') {
+        const parts  = existingScore.split('+');
+        const rondes = parts[0] ? parts[0].trim() : '';
+        const reps   = parts[1] ? parts[1].trim() : '';
+        scoreHtml = `
+            <div class="score-input-row">
+                <span class="score-label">Jouw score:</span>
+                <div class="time-inputs">
+                    <input type="number" class="score-time-input" id="ron-${blockKey}"
+                           placeholder="0" min="0" value="${rondes}">
+                    <span class="time-sep">+</span>
+                    <input type="number" class="score-time-input" id="rep-${blockKey}"
+                           placeholder="0" min="0" value="${reps}">
+                    <span class="score-unit">rondes + reps</span>
+                </div>
+                <button class="btn-score-save" onclick="saveScore('${dateStr}', '${blockKey}', 'rondes', '${blockKey}', '${prExercise || ''}')">
+                    ${existingScore ? 'Aanpassen' : 'Opslaan'}
+                </button>
+                <a class="btn-leaderboard" href="/leaderboard?date=${dateStr}&blockKey=${blockKey}&scoreType=rondes">
+                    🏆 Leaderboard
+                </a>
+            </div>
+        `;
+    } else {
+        const unit = scoreType === 'kg' ? 'kg' : 'reps';
+        scoreHtml = `
+            <div class="score-input-row">
+                <span class="score-label">Jouw score:</span>
+                <input type="number" class="score-number-input" id="val-${blockKey}"
+                       placeholder="0" value="${existingScore}">
+                <span class="score-unit">${unit}</span>
+                <button class="btn-score-save" onclick="saveScore('${dateStr}', '${blockKey}', '${scoreType}', '${blockKey}', '${prExercise || ''}')">
+                    ${existingScore ? 'Aanpassen' : 'Opslaan'}
+                </button>
+                <a class="btn-leaderboard" href="/leaderboard?date=${dateStr}&blockKey=${blockKey}&scoreType=${scoreType}">
+                    🏆 Leaderboard
+                </a>
+            </div>
+        `;
+    }
+}
 
         div.innerHTML = `
             <div class="view-block-header">
@@ -302,41 +325,45 @@
 
     // ─── Score opslaan ────────────────────────────────
     async function saveScore(dateStr, blockKey, scoreType, inputId, prExercise) {
-        let scoreValue = '';
+    let scoreValue = '';
 
-        if (scoreType === 'tijd') {
-            const min = document.getElementById(`min-${inputId}`).value.padStart(2, '0');
-            const sec = document.getElementById(`sec-${inputId}`).value.padStart(2, '0');
-            scoreValue = `${min}:${sec}`;
-        } else {
-            scoreValue = document.getElementById(`val-${inputId}`).value;
-        }
-
-        if (!scoreValue || scoreValue === '00:00') return;
-
-        try {
-            const response = await fetch('/api/scores', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify({ date: dateStr, blockKey, scoreValue })
-            });
-
-            if (response.ok) {
-                currentScores[blockKey] = scoreValue;
-                const btn = document.querySelector(`[onclick*="${blockKey}"]`);
-                if (btn) btn.textContent = 'Aanpassen';
-
-                if (scoreType === 'kg' && prExercise && prExercise !== 'vrij' && prExercise !== '') {
-                    await checkAndUpdatePR(prExercise, parseFloat(scoreValue));
-                }
-            }
-        } catch (e) {
-            console.error('Score opslaan mislukt:', e);
-        }
+    if (scoreType === 'tijd') {
+        const min = document.getElementById(`min-${inputId}`).value.padStart(2, '0');
+        const sec = document.getElementById(`sec-${inputId}`).value.padStart(2, '0');
+        scoreValue = `${min}:${sec}`;
+    } else if (scoreType === 'rondes') {
+        const rondes = document.getElementById(`ron-${inputId}`).value || '0';
+        const reps   = document.getElementById(`rep-${inputId}`).value || '0';
+        scoreValue = `${rondes}+${reps}`;
+    } else {
+        scoreValue = document.getElementById(`val-${inputId}`).value;
     }
+
+    if (!scoreValue || scoreValue === '00:00' || scoreValue === '0+0') return;
+
+    try {
+        const response = await fetch('/api/scores', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ date: dateStr, blockKey, scoreValue })
+        });
+
+        if (response.ok) {
+            currentScores[blockKey] = scoreValue;
+            const btn = document.querySelector(`[onclick*="${blockKey}"]`);
+            if (btn) btn.textContent = 'Aanpassen';
+
+            if (scoreType === 'kg' && prExercise && prExercise !== 'vrij' && prExercise !== '') {
+                await checkAndUpdatePR(prExercise, parseFloat(scoreValue));
+            }
+        }
+    } catch (e) {
+        console.error('Score opslaan mislukt:', e);
+    }
+}
 
     // ─── PR check en update ───────────────────────────
     async function checkAndUpdatePR(exercise, weight) {
