@@ -102,6 +102,7 @@
                 const score = scoreType === 'tijd'   ? formatTime(entry.scoreValue) :
                               scoreType === 'rondes' ? formatRondes(entry.scoreValue) :
                               scoreType === 'kg'     ? entry.scoreValue + ' kg' :
+                              scoreType === 'meter'  ? entry.scoreValue + ' meter' :
                                                        entry.scoreValue + ' reps';
 
                 div.innerHTML = `
