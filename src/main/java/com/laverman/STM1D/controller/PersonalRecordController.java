@@ -48,12 +48,11 @@ public class PersonalRecordController {
         }
     }
 
-    // PR opslaan of updaten
     @PostMapping
     public ResponseEntity<?> savePR(@RequestHeader("Authorization") String authHeader,
                                     @RequestBody Map<String, Object> body) {
         try {
-            User user     = getUserFromHeader(authHeader);
+            User user       = getUserFromHeader(authHeader);
             String exercise = ((String) body.get("exercise"))
                     .toLowerCase().trim().replace(" ", "");
             Double weight   = Double.parseDouble(body.get("weight").toString());
@@ -63,16 +62,15 @@ public class PersonalRecordController {
 
             boolean isNewPR = false;
 
-            PersonalRecord pr = existing.orElse(new PersonalRecord());
-
-            if (existing.isEmpty() || weight > pr.getWeight()) {
+            if (existing.isEmpty() || weight > existing.get().getWeight()) {
                 isNewPR = true;
-            }
 
-            pr.setUser(user);
-            pr.setExercise(exercise);
-            pr.setWeight(weight);
-            prRepository.save(pr);
+                PersonalRecord pr = existing.orElse(new PersonalRecord());
+                pr.setUser(user);
+                pr.setExercise(exercise);
+                pr.setWeight(weight);
+                prRepository.save(pr);
+            }
 
             return ResponseEntity.ok(Map.of(
                     "saved",   true,

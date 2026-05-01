@@ -30,8 +30,8 @@
     const scoreType = params.get('scoreType');
 
     if (date) {
-    document.getElementById('backBtn').href = `/workouts?date=${date}`;
-}
+        document.getElementById('backBtn').href = `/workouts?date=${date}`;
+    }
 
     // ─── Auth + laden ─────────────────────────────────
     async function init() {
@@ -98,8 +98,10 @@
                 if (index === 2) div.classList.add('leaderboard-third');
 
                 const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-                const unit  = scoreType === 'kg' ? ' kg' : scoreType === 'tijd' ? '' : scoreType === 'rondes' ? ' rondes' : ' reps';
-                const score = scoreType === 'tijd' ? formatTime(entry.scoreValue) : entry.scoreValue + unit;
+                const score = scoreType === 'tijd'   ? formatTime(entry.scoreValue) :
+                              scoreType === 'rondes' ? formatRondes(entry.scoreValue) :
+                              scoreType === 'kg'     ? entry.scoreValue + ' kg' :
+                                                       entry.scoreValue + ' reps';
 
                 div.innerHTML = `
                     <div class="leaderboard-rank">${medal}</div>
@@ -120,10 +122,26 @@
         return [...scores].sort((a, b) => {
             if (scoreType === 'tijd') {
                 return timeToSeconds(a.scoreValue) - timeToSeconds(b.scoreValue);
+            } else if (scoreType === 'rondes') {
+                return rondesScore(b.scoreValue) - rondesScore(a.scoreValue);
             } else {
                 return parseFloat(b.scoreValue) - parseFloat(a.scoreValue);
             }
         });
+    }
+
+    function rondesScore(scoreStr) {
+        const parts  = scoreStr.split('+');
+        const rondes = parseInt(parts[0]) || 0;
+        const reps   = parseInt(parts[1]) || 0;
+        return rondes * 1000 + reps;
+    }
+
+    function formatRondes(scoreStr) {
+        const parts  = scoreStr.split('+');
+        const rondes = parseInt(parts[0]) || 0;
+        const reps   = parseInt(parts[1]) || 0;
+        return `${rondes} rondes + ${reps} reps`;
     }
 
     function timeToSeconds(timeStr) {

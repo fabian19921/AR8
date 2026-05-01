@@ -16,7 +16,7 @@
             <input type="email" id="email" required placeholder="Jouw emailadres">
         </div>
 
-        <button type="submit">Reset link versturen</button>
+        <button type="submit" id="submitBtn">Reset link versturen</button>
     </form>
 
     <p class="link-text">
@@ -29,8 +29,13 @@
 <script>
     document.getElementById('forgotForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        const message = document.getElementById('message');
-        const email   = document.getElementById('email').value;
+
+        const message   = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+        const email     = document.getElementById('email').value;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Bezig met versturen...';
 
         try {
             const response = await fetch('/api/password/forgot', {
@@ -40,12 +45,16 @@
             });
 
             const text = await response.text();
+
+            submitBtn.style.display = 'none';
             message.style.color = '#22c55e';
             message.textContent = text;
 
         } catch (e) {
             message.style.color = '#ef4444';
             message.textContent = 'Verbinding fout.';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Reset link versturen';
         }
     });
 </script>
