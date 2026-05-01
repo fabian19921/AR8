@@ -95,10 +95,16 @@
             { key: 'powerclean',            label: 'Power Clean' },
             { key: 'squatclean',            label: 'Squat Clean' },
             { key: 'cleanandjerk',          label: 'Clean & Jerk' },
+            { key: 'strictpress',           label: 'Strict Press' },
+            { key: 'pushpress',             label: 'Push Press' },
             { key: 'pushjerk',              label: 'Push Jerk' },
             { key: 'splitjerk',             label: 'Split Jerk' },
             { key: 'thruster',              label: 'Thruster' },
+            { key: 'benchpress',            label: 'Bench Press' },
             { key: 'pullups',               label: 'Pull Ups' },
+            { key: 'weightedpullups',       label: 'Weighted Pull Ups' },
+            { key: 'dips',                  label: 'Dips' },
+            { key: 'weighteddips',          label: 'Weighted Dips' },
             { key: 'toestobar',             label: 'Toes to Bar' },
             { key: 'barmuscleups',          label: 'Bar Muscle Ups' },
             { key: 'ringmuscleups',         label: 'Ring Muscle Ups' },
@@ -145,6 +151,7 @@
                     <option value="kg"     ${block.scoreType === 'kg'     ? 'selected' : ''}>Kg</option>
                     <option value="rondes" ${block.scoreType === 'rondes' ? 'selected' : ''}>Rondes + Reps</option>
                     <option value="reps"   ${block.scoreType === 'reps'   ? 'selected' : ''}>Reps</option>
+                    <option value="meter"  ${block.scoreType === 'meter'  ? 'selected' : ''}>Meter</option>
                 </select>
             </div>
             <textarea
@@ -201,7 +208,13 @@
         barmuscleups: 'Bar Muscle Ups', ringmuscleups: 'Ring Muscle Ups',
         handstandpushups: 'Handstand Push Ups',
         stricthandstandpushups: 'Strict Handstand Push Ups',
-        handstandwalk: 'Handstand Walk'
+        handstandwalk: 'Handstand Walk',
+        strictpress:     'Strict Press',
+        pushpress:       'Push Press',
+        benchpress:      'Bench Press',
+        weightedpullups: 'Weighted Pull Ups',
+        weighteddips:    'Weighted Dips',
+        dips:            'Dips'
     };
 
     if (value !== 'vrij') {
