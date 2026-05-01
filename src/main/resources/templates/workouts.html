@@ -34,7 +34,6 @@
     const urlDate    = urlParams.get('date');
     let selectedDate = urlDate ? new Date(urlDate + 'T00:00:00') : new Date();
     selectedDate.setHours(0, 0, 0, 0);
-    let weekOffset    = 0;
     let currentScores = {};
     let filledDates   = [];
     let userPRs       = {};
@@ -67,10 +66,10 @@
         return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
     }
 
-    function getMondayOfWeek(date, offset) {
+    function getMondayOfWeek(date) {
         const d = new Date(date);
         const day = d.getDay();
-        const diff = (day === 0 ? -6 : 1 - day) + (offset * 7);
+        const diff = (day === 0 ? -6 : 1 - day);
         d.setDate(d.getDate() + diff);
         d.setHours(0, 0, 0, 0);
         return d;
@@ -148,7 +147,7 @@
         const container = document.getElementById('weekDays');
         container.innerHTML = '';
 
-        const monday = getMondayOfWeek(selectedDate, weekOffset);
+        const monday = getMondayOfWeek(selectedDate);
         const today  = toDateStr(new Date());
         const selStr = toDateStr(selectedDate);
 
@@ -357,11 +356,11 @@
                 if (btn) btn.textContent = 'Aanpassen';
 
                 if (prExercise && prExercise !== 'vrij' && prExercise !== '') {
-                 if (scoreType === 'kg' || scoreType === 'reps' || scoreType === 'meter') {
-                     const unit = scoreType === 'kg' ? 'kg' : scoreType === 'meter' ? 'm' : ' reps';
-                     await checkAndUpdatePR(prExercise, parseFloat(scoreValue), unit);
-              }
-            }
+                    if (scoreType === 'kg' || scoreType === 'reps' || scoreType === 'meter') {
+                        const unit = scoreType === 'kg' ? 'kg' : scoreType === 'meter' ? 'm' : ' reps';
+                        await checkAndUpdatePR(prExercise, parseFloat(scoreValue), unit);
+                    }
+                }
             }
         } catch (e) {
             console.error('Score opslaan mislukt:', e);
@@ -370,28 +369,28 @@
 
     // ─── PR check en update ───────────────────────────
     async function checkAndUpdatePR(exercise, weight, unit) {
-    try {
-        const response = await fetch('/api/pr', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({ exercise, weight })
-        });
+        try {
+            const response = await fetch('/api/pr', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ exercise, weight })
+            });
 
-        if (response.ok) {
-            const result = await response.json();
-            if (result.isNewPR) {
-                showConfetti();
-                showPRBanner(exercise, weight, unit);
-                userPRs[exercise] = weight;
+            if (response.ok) {
+                const result = await response.json();
+                if (result.isNewPR) {
+                    showConfetti();
+                    showPRBanner(exercise, weight, unit);
+                    userPRs[exercise] = weight;
+                }
             }
+        } catch (e) {
+            console.error('PR check mislukt:', e);
         }
-    } catch (e) {
-        console.error('PR check mislukt:', e);
     }
-}
 
     // ─── Confetti ─────────────────────────────────────
     function showConfetti() {
@@ -410,21 +409,23 @@
     }
 
     function showPRBanner(exercise, weight, unit) {
-    const banner = document.createElement('div');
-    banner.classList.add('pr-banner');
-    banner.innerHTML = `🎉 Nieuwe PR! ${exercise}: ${weight}${unit}`;
-    document.body.appendChild(banner);
-    setTimeout(() => banner.remove(), 4000);
-}
+        const banner = document.createElement('div');
+        banner.classList.add('pr-banner');
+        banner.innerHTML = `🎉 Nieuwe PR! ${exercise}: ${weight}${unit}`;
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 4000);
+    }
 
     // ─── Init ─────────────────────────────────────────
     document.getElementById('prevWeek').addEventListener('click', () => {
-        weekOffset--;
+        selectedDate = new Date(getMondayOfWeek(selectedDate));
+        selectedDate.setDate(selectedDate.getDate() - 7);
         renderWeekBar();
     });
 
     document.getElementById('nextWeek').addEventListener('click', () => {
-        weekOffset++;
+        selectedDate = new Date(getMondayOfWeek(selectedDate));
+        selectedDate.setDate(selectedDate.getDate() + 7);
         renderWeekBar();
     });
 
